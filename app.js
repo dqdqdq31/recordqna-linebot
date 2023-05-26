@@ -134,13 +134,6 @@ function doPost(e) {
 
     // record answer
     else if (userMessage.includes("[Answer]") | userMessage.includes("[answer]") | userMessage.includes("[Ans]") | userMessage.includes("[ans]") | userMessage.includes("[A]")) {
-        var reply = findReplyByReplyToken(replyToken);
-        if (reply) {
-            var originalMessage = reply.message;
-
-        }
-
-
         reserve_list_qa.getRange(current_list_row_qa + 1, 1).setValue(current_date);
         reserve_list_qa.getRange(current_list_row_qa + 1, 4).setValue(reserve_name);
         reserve_list_qa.getRange(current_list_row_qa + 1, 5).setValue(userMessage);

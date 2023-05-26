@@ -1,6 +1,5 @@
 # LINE Q&A 及 Info 紀錄機器人 （ Record Q&A and Info Bot ）
-> _幫你紀錄含有關鍵字的訊息到google表單裡
-去年加入一個3千人以上群組，訊息多爆，但有時有人提問與回答值得留存，也方便日後查看。因此這隻機器人是以「紀錄問題與回答」為出發點設計的，然後再加上「記錄資訊」。
+自動將含有關鍵字的訊息丟到google表單裡
 
 ## Features
 
@@ -15,6 +14,18 @@
 > show help
 - /QA or /qa or /Q&A or /QnA
 > show google sheet link url
+
+## Demo
+1. Send message with keyword in line
+<img src = "demo/001.jpg">
+2. The question and answer wiil be stored in google Q&A sheet
+<img src = "demo/002.jpg">
+3. The information wiil be stored in google Info sheet
+<img src = "demo/003.jpg">
+4. Show google sheet url
+<img src = "demo/004.jpg">
+5. Show help
+<img src = "demo/005.jpg">
 
 ## Reference
 - [Github](https://github.com/jschang19/plusone-linebot)
