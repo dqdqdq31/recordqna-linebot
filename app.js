@@ -122,7 +122,18 @@ function doPost(e) {
     // date, Questioner, Question, Respondent, Answer
 
     // record question
-    if (userMessage.includes("[Question]") | userMessage.includes("[question]") | userMessage.includes("[Q]")) {
+    if (userMessage.includes("[Answer]") | userMessage.includes("[answer]") | userMessage.includes("[Ans]") | userMessage.includes("[ans]") | userMessage.includes("[A]")) {
+        reserve_list_qa.getRange(current_list_row_qa + 1, 1).setValue(current_date);
+        reserve_list_qa.getRange(current_list_row_qa + 1, 4).setValue(reserve_name);
+        reserve_list_qa.getRange(current_list_row_qa + 1, 5).setValue(userMessage);
+        current_list_row_qa = reserve_list_qa.getLastRow();
+
+        reply_message = format_text_message("Record Answer");
+        send_to_line()
+    }
+    
+    // record answer
+    else if (userMessage.includes("[Question]") | userMessage.includes("[question]") | userMessage.includes("[Q]")) {
         reserve_list_qa.getRange(current_list_row_qa + 1, 1).setValue(current_date);
         reserve_list_qa.getRange(current_list_row_qa + 1, 2).setValue(reserve_name);
         reserve_list_qa.getRange(current_list_row_qa + 1, 3).setValue(userMessage);
@@ -132,17 +143,7 @@ function doPost(e) {
         send_to_line()
     }
 
-    // record answer
-    else if (userMessage.includes("[Answer]") | userMessage.includes("[answer]") | userMessage.includes("[Ans]") | userMessage.includes("[ans]") | userMessage.includes("[A]")) {
-        reserve_list_qa.getRange(current_list_row_qa + 1, 1).setValue(current_date);
-        reserve_list_qa.getRange(current_list_row_qa + 1, 4).setValue(reserve_name);
-        reserve_list_qa.getRange(current_list_row_qa + 1, 5).setValue(userMessage);
-        current_list_row_qa = reserve_list_qa.getLastRow();
-
-        reply_message = format_text_message("Record Answer");
-        send_to_line()
-    }
-
+    // record information
     else if (userMessage.includes("[Info]") | userMessage.includes("[info]") | userMessage.includes("[I]")) {
         reserve_list_info.getRange(current_list_row_info + 1, 1).setValue(current_date);
         reserve_list_info.getRange(current_list_row_info + 1, 2).setValue(reserve_name);
