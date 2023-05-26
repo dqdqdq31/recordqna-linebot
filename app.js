@@ -1,10 +1,15 @@
 /*
-* 作者 : Chang Chun Shawn ( jcshawn.com )
-* 程式名稱 : 加一 LINE 紀錄機器人
-* 簡述 : 這是一個可以紀錄聊天室或群組傳「+1」訊息使用者的 LINE 機器人，將資料存放在 Google Sheet 中，基於 App Script 語法
-* 授權: Apache 2.0
-* 聯絡方式: contact@jcshawn.com
-* 最新更新 : 2022 / 3 / 30
+* Author : dqdqdq31 (dqdqdq31@gmail.com)
+* Program Name : AutoRecordLineQnA
+* Description: This is a LINE BOT to recore message containing keywords in google sheet. Based on App Script.
+* Keyword:
+*     [Question], [question], or [Q]:           store message containing one of these keywords in Q&A sheet question column
+*     [Answer], [answer], [Ans], [ans], or [A]: store message containing one of these keywords in Q&A sheet answer column
+*     [Info], [info], or [I]:                   store message containing one of these keywords in Info sheet information column
+* LICENCE: Apache 2.0
+* Contact: dqdqdq31@gmail.com
+* Release : 2023 / 5 / 26
+* Reference: https://github.com/jschang19/plusone-linebot
 */
 
 function doPost(e) {
@@ -28,7 +33,7 @@ function doPost(e) {
     const replyToken = msg.events[0].replyToken;
     const user_id = msg.events[0].source.userId;
     const userMessage = msg.events[0].message.text;
-    const event_type = msg.events[0].source.type; 
+    const event_type = msg.events[0].source.type;
 
     /*
     * Google Sheet 資料表資訊設定
@@ -36,24 +41,18 @@ function doPost(e) {
     * 將 sheet_url 改成你的 Google sheet 網址
     * 將 sheet_name 改成你的工作表名稱
     */
-    const sheet_url = 'https://docs.google.com/spreadsheets/d/******';
-    const sheet_name = 'reserve';
+    const sheet_url = ''; // google sheet url
+    const sheet_name_qa = 'Q&A';
     const SpreadSheet = SpreadsheetApp.openByUrl(sheet_url);
-    const reserve_list = SpreadSheet.getSheetByName(sheet_name);
-    /*
-     * 預約人數設定
-     * 
-     * maxium_member : 正式預約人數上限
-     * waiting_start : 候補人數開始的欄位，無需修改
-     * waiting_member : 開放候補人數
-     */
-    const maxium_member = 40;
-    const waiting_start = maxium_member+1;
-    const waiting_member = 3;
+    const reserve_list_qa = SpreadSheet.getSheetByName(sheet_name_qa);
+  
+    const sheet_name_info = 'Info';
+    const reserve_list_info = SpreadSheet.getSheetByName(sheet_name_info);
 
     // 必要參數宣告
-    var current_hour = Utilities.formatDate(new Date(), "Asia/Taipei", "HH"); // 取得執行時的當下時間
-    var current_list_row = reserve_list.getLastRow(); // 取得工作表最後一欄（ 直欄數 ）
+    var current_date = Utilities.formatDate(new Date(), "Asia/Taipei", "yyyy-MM-dd"); // 取得執行時的當下日期
+    var current_list_row_qa = reserve_list_qa.getLastRow(); // 取得工作表最後一欄（ 直欄數 ）
+    var current_list_row_info = reserve_list_info.getLastRow(); // 取得工作表最後一欄（ 直欄數 ）
     var reply_message = []; // 空白回覆訊息陣列，後期會加入 JSON
 
     // 查詢傳訊者的 LINE 帳號名稱
@@ -112,7 +111,6 @@ function doPost(e) {
 
         return text_json;
     }
-
     
     var reserve_name = get_user_name();
 
@@ -120,152 +118,80 @@ function doPost(e) {
         return;
     };
 
-    if (userMessage == "+1" | userMessage == "加一" | userMessage == "＋1" | userMessage == "十1") {
-        // 檢查是否在晚上七點之前傳送
-        if (current_hour >= 0 & current_hour <= 19 | current_hour >= 21) {
-            if (current_list_row < maxium_member) {
-                reserve_list.getRange(current_list_row + 1, 1).setValue(reserve_name);
-                current_list_row = reserve_list.getLastRow();
+    // google sheet content:
+    // date, Questioner, Question, Respondent, Answer
 
-                reply_message = format_text_message(reserve_name + "成功預約 🙆，是第 " + current_list_row + " 位。" + "還有 " + (maxium_member - current_list_row) + " 位名額")
+    // record question
+    if (userMessage.includes("[Question]") | userMessage.includes("[question]") | userMessage.includes("[Q]")) {
+        reserve_list_qa.getRange(current_list_row_qa + 1, 1).setValue(current_date);
+        reserve_list_qa.getRange(current_list_row_qa + 1, 2).setValue(reserve_name);
+        reserve_list_qa.getRange(current_list_row_qa + 1, 3).setValue(userMessage);
+        current_list_row_qa = reserve_list_qa.getLastRow();
 
-            }
-            // 人數超過最大正式名額時，進入候補
-            else if (current_list_row >= maxium_member & current_list_row < (waiting_member + maxium_member)) {
-                reserve_name = "候補：" + reserve_name;
-                reserve_list.getRange(current_list_row + 1, 1).setValue(reserve_name);
-                reply_message = format_text_message("超過 40 人。" + reserve_name + " 為候補預約");
-
-            }
-            else {
-                reply_message = format_text_message("⚠️ 報名額滿！已達 " + maxium_member + "人");
-            }
-        }
-        else {
-            reply_message = format_text_message("現在不是報名時間喔 ～ ，請在 00:00 - 19:00 預約");
-        }
-
+        reply_message = format_text_message("Record Question");
         send_to_line()
     }
 
-    else if (userMessage == "+2" | userMessage == "加二" | userMessage == "十2") {
-        if (current_hour >= 0 & current_hour <= 19) {
-            if (current_list_row < maxium_member) {
-                let name_array = [[reserve_name], [reserve_name]];
-                reserve_list.getRange(current_list_row + 1, 1, 2, 1).setValues(name_array);
-                current_list_row = current_list_row + 2;
+    // record answer
+    else if (userMessage.includes("[Answer]") | userMessage.includes("[answer]") | userMessage.includes("[Ans]") | userMessage.includes("[ans]") | userMessage.includes("[A]")) {
+        var reply = findReplyByReplyToken(replyToken);
+        if (reply) {
+            var originalMessage = reply.message;
 
-                reply_message = format_text_message(reserve_name + "成功預約兩位 🙆" + "還有" + (maxium_member - current_list_row) + "位名額");
-
-            }
-
-            else if (current_list_row >= maxium_member & current_list_row < maxium_member + 2) { // +2 時不給候補
-                let waiting_list_name = "候補：" + reserve_name;
-                let waiting_names_array = [[waiting_list_name], [waiting_list_name]];
-                reserve_list.getRange(current_list_row + 1, 1, 2, 1).setValues(waiting_names_array);
-
-                reply_message = format_text_message(reserve_name + "預約兩位候補");
-
-            }
-            // 名單超過 40 人時不新增，回傳通知訊息
-            else {
-                reply_message = format_text_message("⚠️ 報名額滿！已達 40 人");
-            }
-        }
-        // 非報名時間的訊息通知
-        else {
-            reply_message = format_text_message("現在不是報名時間喔 ～ ，請在 00:00 - 19:00 預約");
         }
 
 
+        reserve_list_qa.getRange(current_list_row_qa + 1, 1).setValue(current_date);
+        reserve_list_qa.getRange(current_list_row_qa + 1, 4).setValue(reserve_name);
+        reserve_list_qa.getRange(current_list_row_qa + 1, 5).setValue(userMessage);
+        current_list_row_qa = reserve_list_qa.getLastRow();
+
+        reply_message = format_text_message("Record Answer");
+        send_to_line()
+    }
+
+    else if (userMessage.includes("[Info]") | userMessage.includes("[info]") | userMessage.includes("[I]")) {
+        reserve_list_info.getRange(current_list_row_info + 1, 1).setValue(current_date);
+        reserve_list_info.getRange(current_list_row_info + 1, 2).setValue(reserve_name);
+        reserve_list_info.getRange(current_list_row_info + 1, 3).setValue(userMessage);
+        current_list_row_info = reserve_list_info.getLastRow();
+
+        reply_message = format_text_message("Record Info");
+        send_to_line()
+    }
+
+    // show google sheet url
+    else if (userMessage == "/QA" | userMessage == "/qa" | userMessage == "/Q&A" | userMessage == "/QnA") {
+        reply_message = format_text_message(sheet_url);
         send_to_line();
     }
 
-    else if (userMessage == "-1" | userMessage == "減一") {
+    // show help
+    else if (userMessage == "/help" | userMessage == "/h") {
+        var help_title  = "這是一個自動將問題與回答, 以及資訊存到google表單的BOT, 表單連結:\n";
+        var help_sheet  =  sheet_url + "\n\n";
 
-        let all_members = reserve_list.getRange(1, 1, current_list_row, 1).getValues().flat();
-        let leaving_member_index = all_members.indexOf(reserve_name);
+        var help_q      = "關鍵字: [Question] 或 [question] 或 [Q]\n";
+        var help_qexp1  = "    訊息加入上述關鍵字, 以自動記錄到Q&A頁面的問題欄位, 並記錄日期跟提問者名稱\n";
+        var help_qexp2  = "    範例:\n";
+        var help_qexp3  = "    [Question]今天天氣如何?\n\n";
 
-        if (leaving_member_index != -1) {
-            let checking_range = leaving_member_index + 1;
-            var waiting_add = reserve_list.getRange(waiting_start, 1).getValue();
+        var help_a      = "關鍵字: [Answer] 或 [answer] 或 [Ans] 或 [ans] 或 [A]\n";
+        var help_aexp1  = "    訊息加入上述關鍵字, 以自動記錄到Q&A頁面的答案欄位, 並記錄日期跟提問者名稱\n";
+        var help_aexp2  = "    範例:\n";
+        var help_aexp3  = "    [Answer]陽光普照但我感冒還是穿外套\n\n";
 
-            reserve_list.getRange(checking_range, 1).clearContent();
-            current_list_row = reserve_list.getLastRow();
-            move_all_data();
+        var help_i      = "關鍵字: [Info] 或 [info] 或 [I]\n";
+        var help_iexp1  = "    訊息加入上述關鍵字, 以自動記錄到Info頁面的資訊欄位, 並記錄日期跟發訊者名稱\n";
+        var help_iexp2  = "    範例:\n";
+        var help_iexp3  = "    [Question]有批牛肉好便宜, 快打0912-3345678\n\n";
 
-            var state = reserve_name + "已退出預約";
-        }
-        else {
-            var state = "您尚未報名，不用減一"
-        }
-
-        if (waiting_add != "") {
-            reply_message = [{
-                "type": "text",
-                "text": state
-            }, {
-                "type": "text",
-                "text": waiting_add + "候補進入上課名單"
-            }]
-        }
-        else {
-            reply_message = format_text_message(state);
-        }
-
-        // 將取消報名者下方所有資料向上移動
-        function move_all_data() {
-            let all_members = reserve_list.getRange(1, 1, current_list_row, 1).getValues().flat();
-            let spaced_cell_index = all_members.indexOf("");
-            let modify_range = current_list_row - spaced_cell_index - 1;
-            let tmp_data = reserve_list.getRange(spaced_cell_index + 2, 1, modify_range, 1).getValues();
-
-            reserve_list.getRange(spaced_cell_index + 1, 1, modify_range, 1).setValues(tmp_data);
-            reserve_list.getRange(current_list_row, 1).clearContent();
-        }
-
-        send_to_line();
-    }
-
-    else if (userMessage == "test") {
-        if (current_hour >= 0 & current_hour <= 19) {
-            reply_message = [{
-                "type": "text",
-                "text": "Test"
-            }]
-        }
-
-        send_to_line();
-    }
-
-
-    else if (userMessage == "報名人數" | userMessage == "名單") {
-        var ready_namelist = "【 報名名單 】\n";
-        var all_members = reserve_list.getRange(1, 1, current_list_row, 1).getValues().flat();
-
-        for (var x = 0; x <= all_members.length-1; x++) {
-            ready_namelist = ready_namelist + "\n" + all_members[x];
-        }
-        reply_message = [
-            {
-                "type": "text",
-                "text": "共有 " + current_list_row + " 位同學報名 ✋"
-            },
-            {
-                "type": "text",
-                "text": ready_namelist
-            }]
-
-        send_to_line();
-    }
-
-    else if (userMessage == "貼圖") {
-        reply_message = [{
-            "type": "sticker",
-            "packageId": "6136",
-            "stickerId": "10551378"
-        }]
-
+        var help_u      = "指令: /QA 或 /qa 或 /Q&A 或 /QnA\n"
+        var help_uexp   = "    輸入指令以顯示google表單連結\n";
+        var help_h      = "指令: /help 或 /h\n"
+        var help_hexp   = "    輸入指令以顯示本說明\n";
+        var help = help_title + help_sheet + help_q + help_qexp1 + help_qexp2 + help_qexp3 + help_a + help_aexp1 + help_aexp2 + help_aexp3 + help_i + help_iexp1 + help_iexp2 + help_iexp3 + help_u + help_uexp + help_h + help_hexp;
+        reply_message = format_text_message(help);
         send_to_line();
     }
 
